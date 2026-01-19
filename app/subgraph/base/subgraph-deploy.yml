@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: subgraph-deploy
+  namespace: chain
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-graphnode
+          image: alpine:3.20
+          command: ["sh", "-lc"]
+          args:
+            - |
+              set -e
+              apk add --no-cache netcat-openbsd >/dev/null
+              echo "Waiting for graph-node admin TCP (graph-node:8020)..."
+              until nc -z graph-node 8020; do sleep 2; done
+              echo "graph-node admin is ready"
+      containers:
+        - name: subgraph-deploy
+          image: fluencelabs/subgraph-deploy-script:0.24.2
+          env:
+            - name: GRAPHNODE_ADMIN_URL_LOCAL
+              value: http://graph-node:8020
+            - name: IPFS_URL
+              value: http://ipfs:5001

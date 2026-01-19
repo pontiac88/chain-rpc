@@ -1,0 +1,27 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: pg-chain
+  namespace: chain
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  primaryUpdateStrategy: unsupervised
+  storage:
+    storageClass: local-path
+    size: 2Gi
+  instances: 1
+
+  bootstrap:
+    initdb:
+      database: app
+      owner: graph-node
+      secret:
+        name: pg-chain-graphnode
+
+  managed:
+    roles:
+      - name: graph-node
+        superuser: true
+        login: true
+        passwordSecret:
+          name: pg-chain-graphnode

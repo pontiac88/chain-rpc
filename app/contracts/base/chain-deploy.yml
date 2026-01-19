@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: chain-deploy
+  namespace: chain
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-chain-rpc
+          image: curlimages/curl:8.5.0
+          command: ["sh", "-lc"]
+          args:
+            - |
+              set -e
+              echo "Waiting for chain-rpc..."
+              until curl -sS -X POST "http://chain-rpc:8545" \
+                -H "Content-Type: application/json" \
+                --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}' \
+                | grep -q '"result"'; do
+                sleep 2
+              done
+              echo "chain-rpc is ready"
+      containers:
+        - name: chain-deploy
+          image: fluencelabs/chain-deploy-script:0.24.2
+          env:
+            - name: CHAIN_RPC_URL
+              value: http://chain-rpc:8545
+            - name: MAX_FAILED_RATIO
+              value: "9999"
+            - name: IS_MOCKED_RANDOMX
+              value: "true"
+            - name: MIN_DURATION
+              value: "0"

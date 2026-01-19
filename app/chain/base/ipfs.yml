@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ipfs
+  namespace: chain
+spec:
+  serviceName: ipfs
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ipfs
+  template:
+    metadata:
+      labels:
+        app: ipfs
+    spec:
+      containers:
+        - name: ipfs
+          image: ipfs/kubo:v0.36.0
+          ports:
+            - containerPort: 5001
+              name: api
+            - containerPort: 4001
+              name: swarm
+          env:
+            - name: IPFS_PROFILE
+              value: server
+          volumeMounts:
+            - name: data
+              mountPath: /data/ipfs
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "ipfs id"]
+            initialDelaySeconds: 5
+            periodSeconds: 8
+            timeoutSeconds: 5
+            failureThreshold: 20
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "ipfs id"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ipfs
+  namespace: chain
+spec:
+  selector:
+    app: ipfs
+  ports:
+    - name: api
+      port: 5001
+      targetPort: 5001
+    - name: swarm
+      port: 4001
+      targetPort: 4001
