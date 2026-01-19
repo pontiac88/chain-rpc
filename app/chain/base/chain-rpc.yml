@@ -27,23 +27,19 @@ spec:
             - name: data
               mountPath: /data
           readinessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: 8545
-              httpHeaders:
-              - name: Content-Type
-                value: application/json
             initialDelaySeconds: 5
             periodSeconds: 5
-            timeoutSeconds: 3
+            timeoutSeconds: 1
             failureThreshold: 30
           livenessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: 8545
             initialDelaySeconds: 15
             periodSeconds: 30
-            timeoutSeconds: 5
+            timeoutSeconds: 1
+            failureThreshold: 3
   volumeClaimTemplates:
     - metadata:
         name: data
